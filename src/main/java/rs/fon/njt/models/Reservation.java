@@ -1,6 +1,7 @@
 package rs.fon.njt.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,7 +28,20 @@ public class Reservation {
         private int classroomId;
     }
     @EmbeddedId
+    @JsonUnwrapped
     private ReservationId reservationId;
-    @Column(name = "date_time")
-    private LocalDateTime dateTime;
+    @Column(name = "start_time")
+    private LocalDateTime startTime;
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+    @Column(name = "capacity")
+    private int capacity;
+    @JsonIgnore
+    @Column(name = "approved")
+    private Boolean approved;
+
+    @Transient
+    private String fullName;
+    @Transient
+    private String classroomName;
 }
