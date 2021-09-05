@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import rs.fon.njt.models.Teacher;
 import rs.fon.njt.repository.TeachersRepository;
+import rs.fon.njt.repository.UsersRepository;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -27,7 +28,7 @@ import java.util.Optional;
 public class AuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
-    private TeachersRepository teachersRepository;
+    private UsersRepository usersRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
@@ -48,7 +49,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
         String username = decodedToken.getSubject();
 
-        Optional<Teacher> teacher = teachersRepository.getTeacherByUsername(username);
+        Optional<rs.fon.njt.models.User> teacher = usersRepository.findById(username);
         if(!teacher.isPresent())
             throw new UsernameNotFoundException(username);
         UserDetails userDetails = new User(teacher.get().getUsername(), teacher.get().getPassword(), Collections.emptyList());

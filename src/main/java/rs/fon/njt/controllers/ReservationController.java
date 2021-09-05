@@ -1,5 +1,6 @@
 package rs.fon.njt.controllers;
 
+import com.auth0.jwt.JWT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,29 @@ public class ReservationController {
 
     @GetMapping()
     public Iterable<Reservation> getReservations(){
-        return reservationRepository.findAll();
+
+        Iterable<Reservation> listRes =  reservationRepository.getAllReservations();
+        for(Reservation reservation : listRes) {
+            Teacher teacher = teachersRepository.getTeacherByUsername(reservation.getTeacherUsername()).get();
+            Classroom classroom = classroomRepository.findById(reservation.getClassroomId()).get();
+            reservation.setFullName(teacher.getFirstName() + " " + teacher.getLastName());
+            reservation.setClassroomName(classroom.getName());
+        }
+        return listRes;
+    }
+
+    @GetMapping("unresponded")
+    @ResponseBody
+    public Iterable<Reservation> getUnrespondedReservations(){
+
+        Iterable<Reservation> listRes =  reservationRepository.findByApprovedIsNull();
+        for(Reservation reservation : listRes) {
+            Teacher teacher = teachersRepository.getTeacherByUsername(reservation.getTeacherUsername()).get();
+            Classroom classroom = classroomRepository.findById(reservation.getClassroomId()).get();
+            reservation.setFullName(teacher.getFirstName() + " " + teacher.getLastName());
+            reservation.setClassroomName(classroom.getName());
+        }
+        return listRes;
     }
 
     @GetMapping("{id}")
@@ -36,8 +59,8 @@ public class ReservationController {
         List<Reservation> listRes =  reservationRepository.findByClassroom_Id(id);
         listRes.stream().forEach(
                 reservation -> {
-                    Teacher teacher = teachersRepository.getTeacherByUsername(reservation.getReservationId().getTeacherUsername()).get();
-                    Classroom classroom = classroomRepository.findById(reservation.getReservationId().getClassroomId()).get();
+                    Teacher teacher = teachersRepository.getTeacherByUsername(reservation.getTeacherUsername()).get();
+                    Classroom classroom = classroomRepository.findById(reservation.getClassroomId()).get();
                     reservation.setFullName(teacher.getFirstName() +" "+ teacher.getLastName());
                     reservation.setClassroomName(classroom.getName());
                 }
@@ -47,8 +70,12 @@ public class ReservationController {
 
     @PostMapping
     @ResponseBody
-    public ResponseEntity createReservation(@RequestBody Reservation reservation){
-        Classroom classroom = classroomRepository.findById(reservation.getReservationId().getClassroomId()).get();
+    public ResponseEntity createReservation(@RequestBody Reservation reservation, @RequestHeader (name="Authorization") String token){
+        token = token.substring(7);
+        String username = JWT.decode(token).getSubject();
+        reservation.setTeacherUsername(username);
+
+        Classroom classroom = classroomRepository.findById(reservation.getClassroomId()).get();
         if(classroom.getCapacity() < reservation.getCapacity())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         List<Reservation> reservationList = reservationRepository.findByClassroom_Id(classroom.getId());
@@ -58,8 +85,23 @@ public class ReservationController {
         if(valid)
         {
             Reservation newRes = reservationRepository.save(reservation);
+            Teacher teacher = teachersRepository.getTeacherByUsername(reservation.getTeacherUsername()).get();
+            reservation.setFullName(teacher.getFirstName() +" "+ teacher.getLastName());
             return ResponseEntity.ok(newRes);
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
+
+    @PostMapping("approve/{id}")
+    @ResponseBody
+    public ResponseEntity approveReseravation(@PathVariable("id") Integer id)
+    {
+        Reservation reservation = reservationRepository.findById(id).orElse(null);
+
+        reservation.setApproved(true);
+
+        reservationRepository.save(reservation);
+
+        return ResponseEntity.ok(reservation);
     }
 }

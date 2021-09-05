@@ -21,4 +21,5 @@ public abstract class User {
     @Column(name = "last_name")
     protected String lastName;
     protected String email;
+    protected String role;
 }

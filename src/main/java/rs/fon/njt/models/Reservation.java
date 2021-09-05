@@ -17,19 +17,17 @@ import java.time.LocalDateTime;
 @Table(name = "reservations")
 public class Reservation {
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Embeddable
-    public static class ReservationId implements Serializable {
-        @Column(name = "teacher_username")
-        private String teacherUsername;
-        @Column(name = "classroom_id")
-        private int classroomId;
-    }
-    @EmbeddedId
-    @JsonUnwrapped
-    private ReservationId reservationId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "reservation_id")
+    private int reservationId;
+
+    @Column(name = "teacher_username")
+    private String teacherUsername;
+    @Column(name = "classroom_id")
+    private int classroomId;
+
+
     @Column(name = "start_time")
     private LocalDateTime startTime;
     @Column(name = "end_time")

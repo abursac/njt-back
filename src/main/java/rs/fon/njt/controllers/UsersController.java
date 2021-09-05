@@ -29,14 +29,16 @@ public class UsersController {
 
     @PostMapping("login")
     public ResponseEntity login(@RequestBody LoginData loginData){
-        Teacher teacher = teachersRepository.findById(loginData.getUsername()).orElse(null);
-        if(teacher == null)
+        User user = usersRepository.findById(loginData.getUsername()).orElse(null);
+        if(user == null)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        if(!passwordEncoder.matches(loginData.getPassword(), teacher.getPassword()))
+        if(!passwordEncoder.matches(loginData.getPassword(), user.getPassword()))
         {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        String token = JWT.create().withSubject(loginData.getUsername()).sign(Algorithm.HMAC256("secret"));
+        String token = JWT.create().withSubject(loginData.getUsername())
+                .withClaim("role", user.getRole())
+                .sign(Algorithm.HMAC256("secret"));
         return ResponseEntity.ok(new Token(token));
     }
 
@@ -45,10 +47,12 @@ public class UsersController {
         return teachersRepository.findAll();
     }
 
-    @GetMapping("teachers/{username}")
+    @GetMapping("currentUser")
     @ResponseBody
-    public Teacher getTeacher(@PathVariable("username") String username){
-        return teachersRepository.findById(username).get();
+    public User getUser(@RequestHeader (name="Authorization") String token){
+        token = token.substring(7);
+        String username = JWT.decode(token).getSubject();
+        return usersRepository.findById(username).get();
     }
 
     @PostMapping("teacher")
