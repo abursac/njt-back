@@ -78,6 +78,8 @@ public class ReservationController {
         Classroom classroom = classroomRepository.findById(reservation.getClassroomId()).get();
         if(classroom.getCapacity() < reservation.getCapacity())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        if(reservation.getStartTime().isAfter(reservation.getEndTime()))
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         List<Reservation> reservationList = reservationRepository.findByClassroom_Id(classroom.getId());
         boolean valid = reservationList.stream().noneMatch(
                 r -> r.getStartTime().isBefore(reservation.getEndTime()) && r.getEndTime().isAfter(reservation.getStartTime())
@@ -99,6 +101,19 @@ public class ReservationController {
         Reservation reservation = reservationRepository.findById(id).orElse(null);
 
         reservation.setApproved(true);
+
+        reservationRepository.save(reservation);
+
+        return ResponseEntity.ok(reservation);
+    }
+
+    @PostMapping("decline/{id}")
+    @ResponseBody
+    public ResponseEntity deleteReseravation(@PathVariable("id") Integer id)
+    {
+        Reservation reservation = reservationRepository.findById(id).orElse(null);
+
+        reservation.setApproved(false);
 
         reservationRepository.save(reservation);
 
